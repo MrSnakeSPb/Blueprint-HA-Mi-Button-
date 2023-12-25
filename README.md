@@ -33,28 +33,25 @@
 
 ## Пример автоматизации
     automation:
-      alias: Свет. Управление светом в Коридоре
-      description: Управление светом в Коридоре
-      use_blueprint:
-        path: MrSnake/Light Remote MiButton.yaml
-        input:
-          switch: binary_sensor.soff_t1_hall_touch_2
-          button: binary_sensor.soff_t1_hall_touch_2
-          
-          detect_1: binary_sensor.ble_motion
-          detect_2: binary_sensor.rec_pult_button_3
-          
-          boolean_start: true
-          time_detect: 1
-          tod1: binary_sensor.ble_motion
-          tod2: binary_sensor.tod_full_night
-          todoff: light.hallway_light1
-          
-          boolean_off: true
-          time_no_motion: 5
-          time_short: "00:05:00"
-          time_medium: "00:10:00"
-          time_long: "00:30:00"
-          timer: timer.svet_hallway2
-          light_1: light.hallway_light2
+        alias: Свет. Управление светом в гостинной
+        description: Управление светом в гостинной
+        use_blueprint:
+          path: MrSnake/Light Remote MiButton.yaml
+          input:
+            light_1: light.child_lights
+            switch: sensor.mi_button_3_action
+            button: binary_sensor.soff_t1_guest_touch_1
+            detect_1: binary_sensor.motion_detect_1_occupancy
+            detect_2: binary_sensor.motion_detect_2_occupancy
+            boolean_start: true
+            time_detect: 5
+            tod1: binary_sensor.tod_day
+            tod2: binary_sensor.tod_day
+            todoff: binary_sensor.lumi_night_day
+            boolean_off: true
+            time_no_motion: 5
+            timer: timer.svet_childroom
+            time_short: "00:10:00"
+            time_medium: "00:20:00"
+            time_long: "01:00:00"
 
