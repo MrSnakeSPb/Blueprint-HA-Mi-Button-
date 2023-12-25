@@ -32,25 +32,26 @@
 Обеспечить 3 бинарными сенсорами tod 1, 2, off
 
 ## Пример автоматизации
-alias: Свет. Управление светом в Коридоре
-description: Управление светом в Коридоре
-use_blueprint:
-  path: MrSnake/Light Remote MiButton.yaml
-  input:
-    switch: binary_sensor.soff_t1_hall_touch_2
-    button: binary_sensor.soff_t1_hall_touch_2
-    detect_1: binary_sensor.ble_motion_night_light
-    detect_2: binary_sensor.rec_pult_button_3
-    boolean_start: true
-    time_detect: 1
-    tod1: binary_sensor.ble_motion_night_light
-    tod2: binary_sensor.tod_full_night
-    todoff: light.hallway_light1
-    boolean_off: false
-    time_no_motion: 5
-    time_short: "00:01:00"
-    time_medium: "00:10:00"
-    time_long: "00:30:00"
-    timer: timer.svet_hallway2
-    light_1: light.hallway_light2
+    automation:
+      alias: Свет. Управление светом в Коридоре
+      description: Управление светом в Коридоре
+      use_blueprint:
+        path: MrSnake/Light Remote MiButton.yaml
+        input:
+          switch: binary_sensor.soff_t1_hall_touch_2
+          button: binary_sensor.soff_t1_hall_touch_2
+          detect_1: binary_sensor.ble_motion_night_light
+          detect_2: binary_sensor.rec_pult_button_3
+          boolean_start: true
+          time_detect: 1
+          tod1: binary_sensor.ble_motion_night_light
+          tod2: binary_sensor.tod_full_night
+          todoff: light.hallway_light1
+          boolean_off: false
+          time_no_motion: 5
+          time_short: "00:01:00"
+          time_medium: "00:10:00"
+          time_long: "00:30:00"
+          timer: timer.svet_hallway2
+          light_1: light.hallway_light2
 
