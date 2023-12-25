@@ -40,16 +40,19 @@
         input:
           switch: binary_sensor.soff_t1_hall_touch_2
           button: binary_sensor.soff_t1_hall_touch_2
-          detect_1: binary_sensor.ble_motion_night_light
+          
+          detect_1: binary_sensor.ble_motion
           detect_2: binary_sensor.rec_pult_button_3
+          
           boolean_start: true
           time_detect: 1
-          tod1: binary_sensor.ble_motion_night_light
+          tod1: binary_sensor.ble_motion
           tod2: binary_sensor.tod_full_night
           todoff: light.hallway_light1
-          boolean_off: false
+          
+          boolean_off: true
           time_no_motion: 5
-          time_short: "00:01:00"
+          time_short: "00:05:00"
           time_medium: "00:10:00"
           time_long: "00:30:00"
           timer: timer.svet_hallway2
