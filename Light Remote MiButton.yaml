@@ -1,0 +1,631 @@
+blueprint:
+  source_url: https://community.home-assistant.io/t/zigbee2mqtt-aqara-opple-switch-3-bands/256212
+  name: Управление светом MiButton
+  homeassistant:
+    min_version: '2022.4.0'
+  description: 'Управление светом с помощью беспроводной кнопки Xiaomi Mi Wireless Switch (YTC4040GL) и датчика двери / движения.
+
+    Система  включает и выключает свет по кнопке, датчику и таймеру, а также наблюдает за остаточным временем.
+
+
+    Управление кнопкой:
+
+    - одиночное нажатие: включает свет на короткое время / выключает
+
+    - двойное нажатие: включает свет на среднее время или увеличивает яркость на 100%, если свет уже включен
+
+    - тройное нажатие: включает свет на долгое время
+
+    - четырехкратное нажатие: включает / уменьшает свет до 1% на 1 минуту
+
+    - многократное: настраиваемое
+
+    - удержание: добавляет / убавляет яркость
+
+
+    Управление (сбработка) по датчику открытия / движения (sensor detect 1,2):
+
+    - свет выключен: включает свет на короткое время
+    
+    - время таймера ниже time detect: запускает таймер на короткое время
+    
+    - включение света , когда 1 и 2 бинарные сенсоры в состоянии /on/, а 3 бинарный сенсор /off/
+    
+    - выключение света по времени отсутствия движения / открытия time Inactivity (No motion)
+    
+    '
+  domain: automation
+  input:
+    light_1:
+      name: Light
+      description: Светильник
+      selector:
+        # target:
+          entity:
+            domain: light
+            
+    switch:
+      name: MiButton
+      description: Mi кнопка управления светом (Можно бинарную ON/OFF)
+      selector:
+        entity:
+#          domain: sensor
+    button:
+      name: Button bin
+      description: >
+        Бинарная кнопка управления светом ON/OFF (Можно снова MiButton)
+        Мгновенно ВКЛ/ВЫКЛ Свет по нажатию и запуск на среднее время.
+      selector:
+        entity:
+          
+    detect_1:
+      name: sensor detect 1
+      description: Датчик 1 включения света (движения/открытия)
+      selector:
+        entity:
+          domain: binary_sensor
+
+    detect_2:
+      name: sensor detect 2
+      description: Датчик 2 включения света (можно Bin Sensor 3)
+      default: {entity_id: []}
+      selector:
+        entity:
+          domain: binary_sensor
+
+    boolean_start:
+      name: start
+      description: Запускать свет по датчику при выключенном свете на короткое время
+      default: true
+      selector:
+        boolean:
+            
+    time_detect:
+      name: time detect
+      description: Время ниже которого таймер будет перезапускаться на короткое время
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+        
+    tod1:
+      name: Bin Sensor 1 enable signal sensor detect
+      description: Дополнительный бинарный сенсор 1 разрешающий включение света по детекторам (например время)
+      selector:
+        entity:
+          domain: binary_sensor
+
+    tod2:
+      name: Bin Sensor 2 enable signal sensor detect
+      description: Дополнительный бинарный сенсор 2 разрешающий включение света по детекторам (можно снова Bin Sensor 1)
+      default: ''
+      selector:
+        entity:
+          domain: binary_sensor
+            
+    todoff:
+      name: Bin Sensor 3 disable signal sensor detect
+      description: Обратный бинарный сенсор 3 разрешающий включение света, когда off по детекторам (Обратный Bin Sensor 3, можно light_1)
+      selector:
+        entity:
+            # domain: binary_sensor
+
+    boolean_off:
+      name: Start Inactivity (No motion)
+      description: Активация отключения света по времени при отсутствии движения по 1 ДЕТЕКТОРУ
+      default: false
+      selector:
+        boolean:
+
+    time_no_motion:
+      name: time Inactivity (No motion)
+      description: Время в течение будет отключение света при отсутствии движения по 1 ДЕТЕКТОРУ
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: minutes
+
+    timer:
+      name: timer
+      description: Таймер выключения света
+      selector:
+        entity:
+          domain: timer
+    time_short:
+      name: time short
+      description: Коротокое время таймера
+      default: 00:10:00
+      selector:
+        time:
+    time_medium:
+      name: time medium
+      description: Среднее время таймера
+      default: 00:30:00
+      selector:
+        time:
+    time_long:
+      name: time long
+      description: Долгое время таймера
+      default: 01:00:00
+      selector:
+        time:
+        
+    button_quadruple:
+      name: Button - quadruple click
+      description: действие по четырехкратному нажатию
+      default: []
+      selector:
+        action: {}
+        
+    button_many:
+      name: Button - many click
+      description: действие по многократному нажатию
+      default: []
+      selector:
+        action: {}
+        
+    # status_bar_icon:
+    #   name: Status bar icon
+    #   description: >-
+    #     (Только для Android) Устанавливает [значок строки состояния]
+    #     (https://companion.home-assistant.io/docs/notifications/notifications-basic/#notification-icon).
+    #     ПРИМЕЧАНИЕ. Отличается от значка в уведомлении, который всегда настроен на изображение сущности обновления.
+    #   default: mdi:package-up
+    #   selector:
+    #     icon:
+    #       placeholder: mdi:lightbulb-auto
+mode: queued
+max_exceeded: silent
+
+variables:
+
+  #command: '{{ trigger.to_state.state }}'
+  light_1: !input 'light_1'
+  switch: !input 'switch'
+  button: !input 'button'
+  detect_1: !input 'detect_1'
+  detect_2: !input 'detect_2'
+  detect: "{{ _tod2 if _tod2 != tod1 }}"
+  timer: !input 'timer'
+  time_detect: !input 'time_detect'
+  boolean_start: !input 'boolean_start'
+  boolean_off: !input 'boolean_off' 
+  tod1: !input 'tod1'
+  _tod2: !input 'tod2'
+  tod2: "{{ _tod2 if _tod2 != tod1 }}"
+  #tod2: !input 'tod2'
+  todoff: !input 'todoff'
+  brightness_step: 0
+
+trigger:
+    - platform: state                     # датчик активирован
+      entity_id: 
+        - !input 'detect_1'
+        - !input 'detect_2'
+      to: 'on'
+      id: "detect"
+
+    - platform: state                     # нет движения
+      entity_id: 
+        - !input 'detect_1'
+      to: 'off'
+      for: 
+        minutes: !input 'time_no_motion'
+      id: "no_motion"
+
+    - platform: state
+      entity_id: !input 'light_1'         # Лампа ВКЛ
+      to: 'on'
+      id: "on"
+      
+    - platform: homeassistant
+      event: start
+      id: "finish"
+      
+    - platform: state
+      entity_id: !input 'button'
+      to: 'on'
+      id: "bin"
+      
+    - platform: state
+      entity_id: !input 'switch'
+      to: single
+      id: "single"
+    
+    - platform: state
+      entity_id: !input 'switch'
+      to: "double"
+      id: "double"
+    
+    - platform: state
+      entity_id: !input 'switch'
+      to: "triple"
+      id: "triple"
+      
+    - platform: state
+      entity_id: !input 'switch'
+      to: "quadruple"
+      id: "quadruple"
+      
+    - platform: state
+      entity_id: !input 'switch'
+      to: "hold"
+      id: "hold"
+      
+    - platform: state
+      entity_id: !input 'switch'
+      to: "release"
+      id: "release"
+
+      
+    - platform: state
+      entity_id: !input 'switch'
+      to: "many"
+      id: "many"
+
+    - platform: event                        # Таймер истек
+      event_type: timer.finished
+      event_data:
+        entity_id: !input 'timer'
+      id: "finish"
+        
+    #  Для Light OFF
+    - platform: state                        # Лампа выключена
+      entity_id: !input 'light_1'
+      to: 'off'
+    
+    - platform: state                        # Лампа недоступна
+      entity_id: !input 'light_1'
+      from: "unavailable"
+      id: "unavailable"
+
+action:
+  choose:
+  - conditions: # Запуск таймера на medium минут всегда по ВКЛ лампы
+      - condition: trigger
+        id: "on"
+      - condition: state
+        entity_id: !input 'timer'
+        state: 'idle'
+    sequence:
+      - service: timer.start
+        data:
+         entity_id: !input 'timer'
+         duration: !input 'time_medium'
+        
+  - conditions: # Пропуск тригера когда таймер активный
+      - condition: trigger
+        id: "on"
+      - condition: state
+        entity_id: !input 'timer'
+        state: 'active'
+    sequence:
+
+  - conditions: # Запуск таймера и включение света по бин кнопке
+      - condition: trigger
+        id: "bin"
+      - condition: state
+        entity_id: !input 'light_1'
+        state: 'off'
+    sequence:
+
+      - service: timer.start
+        data:
+         entity_id: !input 'timer'
+         duration: !input 'time_medium'
+      - service: light.turn_on
+        target:
+          entity_id: !input 'light_1'
+
+
+# sensor detect  ФИЧА! Умное определение времени детекции движения/открытия
+  - conditions: # Перезапуск таймера по дачтикам-детекторам
+      - condition: trigger
+        id: "detect"
+    sequence:
+          choose:
+          - conditions:
+              - condition: template # Проверка на автосвет и отрицательную разницу порога времени
+                value_template: |
+                    {% set time = (state_attr(timer, 'finishes_at')|as_timestamp(timer|int(default=0))|int/60 
+                      - now()|as_timestamp/60) |float(default=0)|round (1)%}
+                    {% set tod_1 = states(tod1) %}
+                    {% set tod_2 = states(tod2) %}
+                    
+                    
+                    {% set todoff = states(todoff) %}
+                    {% if boolean_start == true and todoff == 'off'
+                          and (tod_1 == 'on' or tod_2 == 'on')
+                          and time <= time_detect and time < 0 %} true
+                    {% else %} false{% endif %}
+                    
+# {% set tod_2 = states(tod2) %}
+            sequence: # Включаем свет и сбрасываем таймер на короткое время
+              - service: timer.start
+                data:
+                  entity_id:  !input 'timer'
+                  duration: !input 'time_short'
+              - service: light.turn_on
+                target:
+                  entity_id: !input 'light_1'
+
+
+          - conditions:
+            - condition: template # Проверка на время меньше порогового сброса таймера
+              value_template: |
+                  {% set time = (state_attr(timer, 'finishes_at')|as_timestamp(timer|int(default=0))|int/60 
+                      - now ()|as_timestamp|int(default=0)/60) |float(default=0)|round (1) %}
+                  {% if time > 0 and time < time_detect %} true
+                  {% else %} false
+                  {% endif %}
+            sequence:
+              - service: timer.start # Сбрасываем таймер на короткое время
+                data:
+                  entity_id:  !input 'timer'
+                  duration: !input 'time_short'
+          default:
+
+  - conditions: # Выключение света при отсутствии движения
+      - condition: trigger
+        id: "no_motion"
+      - condition: template # Проверка на логику отсутствия движения
+        value_template: >-
+          {% if boolean_off == false %} true
+          {% else %} false
+          {% endif %} 
+    sequence:
+
+
+
+  # - conditions: # Пропуск тригера по датчику
+  #     - condition: trigger
+  #       id: "detect"
+  #   sequence:
+          
+    # SINGLE BUTTON
+  - conditions: # Включить лампу single 50% на 10 минут
+      - condition: trigger
+        id: "single"
+      - condition: state
+        entity_id: !input 'light_1'
+        state: 'off'
+    sequence:
+      - service: timer.start
+        data:
+          entity_id:  !input 'timer'
+          duration: !input 'time_short'
+      - service: light.turn_on
+        target:
+          entity_id: !input 'light_1'
+        # data:
+        #   brightness_pct: 50
+
+    #   - service: notify.telegram_id_1
+    #     data:
+    #       message: "{{ states(switch) }}"
+          
+# DOUBLE BUTTON
+  - conditions: # Включить лампу double на среднее время
+      - condition: trigger
+        id: "double"
+      - condition: state
+        entity_id: !input 'light_1'
+        state: 'off'
+    sequence:
+      - service: timer.start
+        data:
+          entity_id:  !input 'timer'
+          duration: !input 'time_medium'
+      - service: light.turn_on
+        target:
+          entity_id: !input 'light_1'
+        # data_template:
+        #   brightness_pct: 50
+
+  - conditions: # Увеличить яркость double 100%
+      - condition: trigger
+        id: "double"
+      - condition: state
+        entity_id: !input 'light_1'
+        state: 'on'
+    sequence:
+      - service: light.turn_on
+        entity_id: !input 'light_1' # Включай лампу
+        data_template:
+          brightness_pct: 100
+# TRIPLE BUTTON
+  - conditions: # Включить лампу triple на долгое время
+      - condition: trigger
+        id: "triple"
+    sequence:
+      - service: timer.start
+        data:
+          entity_id:  !input 'timer'
+          duration: !input 'time_long'
+      - service: light.turn_on
+        target:
+          entity_id: !input 'light_1'
+# QUADRUPLE
+  - conditions:
+      - condition: trigger
+        id: "quadruple"
+    sequence:
+      - service: light.turn_on
+        target:
+          entity_id: !input 'light_1'
+        data:
+          brightness: 1
+      - service: timer.start
+        data:
+          entity_id:  !input 'timer'
+          duration: '00:01:00'
+
+# HOLD BUTTON
+  - conditions: # Увеличить яркость лампы
+      - condition: trigger
+        id: "hold"
+    #   - condition: numeric_state
+    #     entity_id: !input 'light_1'
+    #     attribute: 'brightness'
+    #     below: 129
+    sequence:
+      - event: light_dimmer_start
+      #  event_data:
+      #   entity_id: !input 'light_1'
+      
+      - repeat:
+          sequence:
+            - service: light.turn_on
+              data:
+                entity_id: !input 'light_1'
+                brightness_step: "{{ -10 if state_attr(light_1, 'brightness') | default(0) | int > 128 else 10 }}"
+
+            - wait_for_trigger:
+                - platform: event
+                  event_type: light_dimmer_stop
+                # event_data:
+                #   entity_id: !input 'light_1'
+              timeout: 00:00:01.250
+              continue_on_timeout: true
+          #until: "{{ wait.trigger != None or repeat.index > 255 / brightness_step | abs }}"
+          until: "{{repeat.index > 255 / brightness_step | abs }}"
+          
+#   - conditions: # Увеличить яркость лампы
+#       - condition: trigger
+#         id: "release"
+# #       - condition: numeric_state
+# #         entity_id: !input 'light_1'
+# #         attribute: 'brightness'
+# #         above: 128
+#     sequence:
+#       - event: light_dimmer_stop
+#         event_data:
+#           entity_id: !input 'light_1'
+
+#     - repeat:
+#       while: 
+#       - condition: template
+#          value_template: >
+#                  {% if not switch == release %} true
+#                     {% endif %}
+
+# #         value_template: "{{ command == 'hold' or repeat.index < 25}}"
+#       sequence:
+#             - service: light.turn_on
+#               data_template:
+#                 brightness_step_pct: 5
+#                 #transition: 0.5
+#               entity_id: !input 'light_1'
+#             - delay: '0.5'
+# # until:
+# #     - '{{ command == ''release'' }}'
+#     # 
+#   - conditions: # Уменьшить яркость лампы
+#       - condition: trigger
+#         id: "hold"
+#       - condition: numeric_state
+#         entity_id: !input 'light_1'
+#         attribute: 'brightness'
+#         above: 128
+#     sequence:
+#     - repeat:
+#       while: 
+#       - condition: template
+#          value_template: >
+#                  {% if not switch == release %} true
+#                     {% endif %}
+#       sequence:
+#         - service: light.turn_on
+#           data_template:
+#             brightness_step_pct: -5
+#             transition: 0.5
+#           entity_id: !input 'light_1'
+#         - delay: '0.1'
+                    
+                    
+#   - conditions: # Уменьшить яркость лампы
+#       - condition: trigger
+#         id: "hold"
+#       - condition: numeric_state
+#         entity_id: !input 'light_1'
+#         attribute: 'brightness'
+#         above: 128
+#     sequence:
+#     - repeat:
+#         until:
+#         - condition: state
+#           entity_id: !input 'switch'
+#           state: "release"
+#         sequence:
+#         - service: light.turn_on
+#           data_template:
+#             brightness_step_pct: -5
+#             transition: 0.5
+#           entity_id: !input 'light_1'
+#         - delay: '0.1'
+        
+# ТАЙМЕР FINISH
+  - conditions:
+        - condition: trigger
+          id: "finish"
+        - condition: state
+          entity_id: !input 'light_1'
+          state: 'on'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: !input 'detect_1'
+              state: 'on'
+            - condition: state
+              entity_id: !input 'detect_2'
+              state: 'on'
+
+    sequence:
+      - service: timer.start
+        data:
+          entity_id:  !input 'timer'
+          duration: !input 'time_short'
+
+          
+# UNAVAILABLE
+  - conditions: # Лампа недоступна -> ВКЛ, таймер простаивает
+      - condition: trigger
+        id: "unavailable"
+    #   - condition: state
+    #     entity_id: !input 'light_1'
+    #     state: 'on'
+      - condition: state
+        entity_id: !input 'timer'
+        state: 'active'
+    sequence:
+    #   - service: light.turn_off
+    #     entity_id: !input 'light_1' # Выключай лампу
+      - service: timer.cancel
+        entity_id: !input 'timer' # Отмени таймер
+
+
+# ДОПОЛНИТЕЛЬНЫЕ ДЕЙСТВИЯ НА КЛАВИШАХ
+  - conditions:
+      - condition: trigger
+        id: "many"
+    sequence: !input 'button_many'
+    
+  default:
+  - service: light.turn_off
+    target:
+      entity_id: !input 'light_1' # Выключай лампу
+  - service: timer.cancel
+    entity_id: !input 'timer' # Отмени таймер
+      
+# script:
+#   light_dimmer:
+#     alias: Light Dimmer
+#     mode: parallel
+#     variables:
+#       entity_id: ''
+#       brightness_step: 0
+#     sequence:
